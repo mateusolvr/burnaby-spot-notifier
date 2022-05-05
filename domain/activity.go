@@ -6,8 +6,8 @@ type Activity struct {
 	CourseName      string
 	WeekDay         string
 	Times           string
-	DaysStr         string
-	Days            time.Time
+	DateStr         string
+	Date            time.Time
 	ComplexName     string
 	AvailableSpaces int
 }

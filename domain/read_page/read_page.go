@@ -18,13 +18,15 @@ import (
 type service struct {
 	validationService domain.ValidationService
 	emailService      domain.EmailService
+	cfg               domain.Config
 	activities        []domain.Activity
 }
 
-func NewService(validationService domain.ValidationService, emailService domain.EmailService) *service {
+func NewService(validationService domain.ValidationService, emailService domain.EmailService, cfg domain.Config) *service {
 	return &service{
 		validationService: validationService,
 		emailService:      emailService,
+		cfg:               cfg,
 	}
 }
 
@@ -67,7 +69,7 @@ func (s *service) InitializeCrawler() {
 
 	// Populate day field with time type from string
 	for i, v := range s.activities {
-		s.activities[i].Days = s.validationService.ParseDate(v.DaysStr[:11])
+		s.activities[i].Date = s.validationService.ParseDate(v.DateStr[:11])
 	}
 
 	s.checkActivityAvailability()
@@ -125,7 +127,7 @@ func (s *service) getActivitiesPage(ctx context.Context) {
 		); err != nil {
 			log.Fatal(err)
 		}
-		if s.validationService.ValidateActivity(ctx, firstCol) {
+		if s.validationService.ValidateActivity(ctx, firstCol, s.cfg.Activity.Name) {
 			s.getActivityDetails(ctx, i)
 		}
 
@@ -162,7 +164,7 @@ func (s *service) getActivityDetails(ctx context.Context, index int) {
 }
 
 func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node, index int) {
-	var courseName, weekDay, times, days, complexName, availableSpaces string
+	var courseName, weekDay, times, date, complexName, availableSpaces string
 
 	rootPath := fmt.Sprintf("/html/body/div[1]/div[2]/div/div[2]/div/div/div[1]/div[2]/div/table/tbody/tr[%d]", index)
 	tableSel := rootPath + "/td/div[3]/div/div/table/tbody/tr%s/td[%d]"
@@ -177,7 +179,7 @@ func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node
 			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.CourseNameColumn), &courseName),
 			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.WeekDayColumn), &weekDay),
 			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.TimesColumn), &times),
-			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.DaysColumn), &days),
+			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.DaysColumn), &date),
 			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.ComplexNameColumn), &complexName),
 			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.AvailableSpacesColumn), &availableSpaces),
 		)
@@ -185,7 +187,7 @@ func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node
 			log.Fatal(err)
 		}
 
-		courseName, weekDay, times, days, complexName, availableSpaces = s.validationService.CleanFields(courseName, weekDay, times, days, complexName, availableSpaces)
+		courseName, weekDay, times, date, complexName, availableSpaces = s.validationService.CleanFields(courseName, weekDay, times, date, complexName, availableSpaces)
 		availableSpacesInt, err := strconv.Atoi(availableSpaces)
 		if err != nil {
 			log.Fatal(err)
@@ -195,24 +197,30 @@ func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node
 			CourseName:      courseName,
 			WeekDay:         weekDay,
 			Times:           times,
-			DaysStr:         days,
+			DateStr:         date,
 			ComplexName:     complexName,
 			AvailableSpaces: availableSpacesInt}
 		s.activities = append(s.activities, newActivity)
 
 		fmt.Printf("Activity: %s\nWeekDay: %s\nTimes: %s\nDays: %s\nComplex Name: %s\nAvailable Spaces: %s\n\n",
-			courseName, weekDay, times, days, complexName, availableSpaces)
+			courseName, weekDay, times, date, complexName, availableSpaces)
 	}
 }
 
 func (s *service) checkActivityAvailability() {
+	var availableActivities []domain.Activity
 	for _, act := range s.activities {
 		y, m, d := time.Now().Date()
 		currDate := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
-		dateDiff := act.Days.Sub(currDate).Hours() / 24
+		dateDiff := act.Date.Sub(currDate).Hours() / 24
 
-		if dateDiff <= 4 && act.AvailableSpaces > 0 {
-			log.Println("AVAILABLE SPACE!!!!")
+		if dateDiff <= float64(s.cfg.Activity.DaysAhead) && act.AvailableSpaces > 0 {
+			availableActivities = append(availableActivities, act)
 		}
+	}
+
+	if len(availableActivities) > 0 {
+		htmlBody := s.emailService.BuildHtmlBody(availableActivities)
+		s.emailService.SendMail(s.cfg, htmlBody)
 	}
 }
