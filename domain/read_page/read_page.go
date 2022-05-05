@@ -41,7 +41,6 @@ func (s *service) InitializeCrawler() {
 
 	ctx, cancel = context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
-	start := time.Now()
 
 	// Go to main page and select Adults category
 	err := chromedp.Run(ctx,
@@ -55,10 +54,8 @@ func (s *service) InitializeCrawler() {
 
 	totalActivities := s.getTotalActivities(ctx)
 	totalPages := int(math.Ceil(float64(totalActivities) / 10))
-	fmt.Println("Total Pages: ", totalPages)
 
 	for i := 0; i <= totalPages; i++ {
-		fmt.Println("Page: ", i)
 		s.getActivitiesPage(ctx)
 		if i == totalPages {
 			break
@@ -73,9 +70,6 @@ func (s *service) InitializeCrawler() {
 	}
 
 	s.checkActivityAvailability()
-
-	fmt.Printf("\nTook: %f secs\n", time.Since(start).Seconds())
-
 }
 
 func (s *service) clickNextPage(ctx context.Context) {
@@ -156,8 +150,6 @@ func (s *service) getActivityDetails(ctx context.Context, index int) {
 		log.Fatal(err)
 	}
 
-	log.Println("Number rows: ", len(rows))
-
 	if len(rows) > 0 {
 		s.getDataFromActivityTable(ctx, rows, index)
 	}
@@ -174,7 +166,6 @@ func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node
 		if len(rows) == 1 {
 			rowIndex = ""
 		}
-		fmt.Println(fmt.Sprintf(tableSel, rowIndex, domain.CourseNameColumn))
 		err := chromedp.Run(ctx,
 			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.CourseNameColumn), &courseName),
 			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.WeekDayColumn), &weekDay),
@@ -201,9 +192,6 @@ func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node
 			ComplexName:     complexName,
 			AvailableSpaces: availableSpacesInt}
 		s.activities = append(s.activities, newActivity)
-
-		fmt.Printf("Activity: %s\nWeekDay: %s\nTimes: %s\nDays: %s\nComplex Name: %s\nAvailable Spaces: %s\n\n",
-			courseName, weekDay, times, date, complexName, availableSpaces)
 	}
 }
 
@@ -223,4 +211,6 @@ func (s *service) checkActivityAvailability() {
 		htmlBody := s.emailService.BuildHtmlBody(availableActivities)
 		s.emailService.SendMail(s.cfg, htmlBody)
 	}
+
+	log.Printf("%d activities were found!", len(availableActivities))
 }

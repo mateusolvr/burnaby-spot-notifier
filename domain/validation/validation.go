@@ -20,7 +20,6 @@ func (s *service) ValidateActivity(ctx context.Context, activity string, actName
 	r := regexp.MustCompile(regexStr)
 	str := r.FindString(activity)
 	if str != "" {
-		log.Println(activity)
 		return true
 	}
 

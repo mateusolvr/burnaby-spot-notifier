@@ -34,7 +34,7 @@ func (s *service) SendMail(cfg domain.Config, htmlBody string) {
 		from, []string{to}, []byte(msg))
 
 	if err != nil {
-		log.Printf("smtp error: %s", err)
+		log.Fatal(err)
 		return
 	}
 }
