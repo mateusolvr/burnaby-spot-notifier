@@ -1,0 +1,10 @@
+# Email Configurations
+   email:
+     from: "xxxxx@xxxx.com"
+     pass: "xxxxxxx"
+     to: "xxxxx@xxxx.com"
+
+ # Activity Configurations
+   activity:
+     name: "Volleyball Bonsor"
+     daysAhead: 4
