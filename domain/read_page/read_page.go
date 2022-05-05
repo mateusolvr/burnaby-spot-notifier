@@ -17,12 +17,14 @@ import (
 
 type service struct {
 	validationService domain.ValidationService
+	emailService      domain.EmailService
 	activities        []domain.Activity
 }
 
-func NewService(validationService domain.ValidationService) *service {
+func NewService(validationService domain.ValidationService, emailService domain.EmailService) *service {
 	return &service{
 		validationService: validationService,
+		emailService:      emailService,
 	}
 }
 
@@ -67,6 +69,8 @@ func (s *service) InitializeCrawler() {
 	for i, v := range s.activities {
 		s.activities[i].Days = s.validationService.ParseDate(v.DaysStr[:11])
 	}
+
+	s.checkActivityAvailability()
 
 	fmt.Printf("\nTook: %f secs\n", time.Since(start).Seconds())
 
@@ -198,5 +202,17 @@ func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node
 
 		fmt.Printf("Activity: %s\nWeekDay: %s\nTimes: %s\nDays: %s\nComplex Name: %s\nAvailable Spaces: %s\n\n",
 			courseName, weekDay, times, days, complexName, availableSpaces)
+	}
+}
+
+func (s *service) checkActivityAvailability() {
+	for _, act := range s.activities {
+		y, m, d := time.Now().Date()
+		currDate := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+		dateDiff := act.Days.Sub(currDate).Hours() / 24
+
+		if dateDiff <= 4 && act.AvailableSpaces > 0 {
+			log.Println("AVAILABLE SPACE!!!!")
+		}
 	}
 }
