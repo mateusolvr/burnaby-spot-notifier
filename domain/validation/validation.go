@@ -15,8 +15,9 @@ func NewService() *service {
 	return &service{}
 }
 
-func (s *service) ValidateActivity(ctx context.Context, activity string) bool {
-	r := regexp.MustCompile(`(Volleyball Bonsor)`)
+func (s *service) ValidateActivity(ctx context.Context, activity string, actNameConfig string) bool {
+	regexStr := "(" + actNameConfig + ")"
+	r := regexp.MustCompile(regexStr)
 	str := r.FindString(activity)
 	if str != "" {
 		log.Println(activity)
@@ -35,12 +36,12 @@ func (s *service) CleanString(str string) (newStr string) {
 	return
 }
 
-func (s *service) CleanFields(courseName, weekDay, times, days, complexName, availableSpaces string) (courseNameCleaned, weekDayCleaned, timesCleaned, daysCleaned, complexNameCleaned, availableSpacesCleaned string) {
+func (s *service) CleanFields(courseName, weekDay, times, date, complexName, availableSpaces string) (courseNameCleaned, weekDayCleaned, timesCleaned, daysCleaned, complexNameCleaned, availableSpacesCleaned string) {
 
 	courseNameCleaned = s.CleanString(courseName)
 	weekDayCleaned = s.CleanString(weekDay)
 	timesCleaned = s.CleanString(times)
-	daysCleaned = s.CleanString(days)
+	daysCleaned = s.CleanString(date)
 	complexNameCleaned = s.CleanString(complexName)
 	availableSpacesCleaned = s.CleanString(availableSpaces)
 
