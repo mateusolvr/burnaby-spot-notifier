@@ -19,11 +19,7 @@ func (s *service) ValidateActivity(ctx context.Context, activity string, actName
 	regexStr := "(" + actNameConfig + ")"
 	r := regexp.MustCompile(regexStr)
 	str := r.FindString(activity)
-	if str != "" {
-		return true
-	}
-
-	return false
+	return str != ""
 }
 
 func (s *service) CleanString(str string) (newStr string) {
