@@ -122,14 +122,14 @@ func (s *service) getActivitiesPage(ctx context.Context) {
 			log.Fatal(err)
 		}
 		if s.validationService.ValidateActivity(ctx, firstCol) {
-			s.checkActivityAvailability(ctx, i)
+			s.getActivityDetails(ctx, i)
 		}
 
 	}
 
 }
 
-func (s *service) checkActivityAvailability(ctx context.Context, index int) {
+func (s *service) getActivityDetails(ctx context.Context, index int) {
 	sel := fmt.Sprintf("/html/body/div[1]/div[2]/div/div[2]/div/div/div[1]/div[2]/div/table/tbody/tr[%d]/td/div[3]/span[1]", index)
 
 	var rows []*cdp.Node
