@@ -20,7 +20,7 @@ func (s *service) SendMail(cfg domain.Config, htmlBody string) {
 	pass := cfg.Email.Pass
 	to := cfg.Email.To
 
-	subject := "Test email from Go!"
+	subject := "Available Activity - Burnaby"
 
 	headers := "From: " + from + "\n" +
 		"To: " + to + "\n" +
