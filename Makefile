@@ -4,7 +4,7 @@ up: ##@development Build and start development environment in background.
 
 .PHONY: shell
 shell: ##@development Start a shell session within the container.
-	docker-compose run --rm app /bin/sh
+	docker-compose run --rm go /bin/sh
 	
 lint_version ?= v1.40-alpine
 .PHONY: lint
