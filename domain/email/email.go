@@ -15,7 +15,7 @@ func NewService() *service {
 	return &service{}
 }
 
-func (s *service) SendMail(cfg domain.Config, htmlBody string) {
+func (s *service) SendEmail(cfg domain.Config, htmlBody string) {
 	from := cfg.Email.From
 	pass := cfg.Email.Pass
 	to := cfg.Email.To

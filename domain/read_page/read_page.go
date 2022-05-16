@@ -209,7 +209,7 @@ func (s *service) checkActivityAvailability() {
 
 	if len(availableActivities) > 0 {
 		htmlBody := s.emailService.BuildHtmlBody(availableActivities)
-		s.emailService.SendMail(s.cfg, htmlBody)
+		s.emailService.SendEmail(s.cfg, htmlBody)
 	}
 
 	log.Printf("%d activities were found!", len(availableActivities))

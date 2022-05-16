@@ -1,6 +1,6 @@
 package domain
 
 type EmailService interface {
-	SendMail(cfg Config, htmlBody string)
+	SendEmail(cfg Config, htmlBody string)
 	BuildHtmlBody(activities []Activity) string
 }
