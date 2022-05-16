@@ -49,6 +49,7 @@ func (s *service) InitializeCrawler() {
 		chromedp.Click(`//*[@id="browser"]/li[1]/span/a`, chromedp.BySearch),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmail(err)
 		log.Fatal(err)
 	}
 
@@ -77,6 +78,7 @@ func (s *service) clickNextPage(ctx context.Context) {
 		chromedp.Click(`//*[@id="course-tab"]/div[2]/div/div[2]/div[2]/a[3]`, chromedp.BySearch),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmail(err)
 		log.Fatal(err)
 	}
 }
@@ -87,6 +89,7 @@ func (s *service) getTotalActivities(ctx context.Context) (activitiesQty int) {
 		chromedp.Text("/html/body/div[1]/div[2]/div/div[2]/div/div/div[1]/div[2]/div/div[2]/div[1]", &activitiesQtyStr),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmail(err)
 		log.Fatal(err)
 	}
 
@@ -96,6 +99,7 @@ func (s *service) getTotalActivities(ctx context.Context) (activitiesQty int) {
 	if len(str) >= 2 {
 		activitiesQty, err = strconv.Atoi(str[1])
 		if err != nil {
+			s.emailService.SendErrorEmail(err)
 			log.Fatal(err)
 		}
 		return activitiesQty
@@ -110,6 +114,7 @@ func (s *service) getActivitiesPage(ctx context.Context) {
 		chromedp.Nodes(`//*[@id="course-tab"]/div[2]/div/table/tbody/tr`, &rows, chromedp.BySearch),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmail(err)
 		log.Fatal(err)
 	}
 
@@ -119,6 +124,7 @@ func (s *service) getActivitiesPage(ctx context.Context) {
 		if err := chromedp.Run(ctx,
 			chromedp.Text(fmt.Sprintf(sel, i), &firstCol),
 		); err != nil {
+			s.emailService.SendErrorEmail(err)
 			log.Fatal(err)
 		}
 		if s.validationService.ValidateActivity(ctx, firstCol, s.cfg.Activity.Name) {
@@ -137,6 +143,7 @@ func (s *service) getActivityDetails(ctx context.Context, index int) {
 		chromedp.Click(sel, chromedp.BySearch),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmail(err)
 		log.Fatal(err)
 	}
 
@@ -147,6 +154,7 @@ func (s *service) getActivityDetails(ctx context.Context, index int) {
 	)
 
 	if err != nil {
+		s.emailService.SendErrorEmail(err)
 		log.Fatal(err)
 	}
 
@@ -175,12 +183,14 @@ func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node
 			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.AvailableSpacesColumn), &availableSpaces),
 		)
 		if err != nil {
+			s.emailService.SendErrorEmail(err)
 			log.Fatal(err)
 		}
 
 		courseName, weekDay, times, date, complexName, availableSpaces = s.validationService.CleanFields(courseName, weekDay, times, date, complexName, availableSpaces)
 		availableSpacesInt, err := strconv.Atoi(availableSpaces)
 		if err != nil {
+			s.emailService.SendErrorEmail(err)
 			log.Fatal(err)
 		}
 
@@ -209,7 +219,7 @@ func (s *service) checkActivityAvailability() {
 
 	if len(availableActivities) > 0 {
 		htmlBody := s.emailService.BuildHtmlBody(availableActivities)
-		s.emailService.SendEmail(s.cfg, htmlBody)
+		s.emailService.SendEmail(htmlBody)
 	}
 
 	log.Printf("%d activities were found!", len(availableActivities))

@@ -9,16 +9,19 @@ import (
 )
 
 type service struct {
+	cfg domain.Config
 }
 
-func NewService() *service {
-	return &service{}
+func NewService(cfg domain.Config) *service {
+	return &service{
+		cfg: cfg,
+	}
 }
 
-func (s *service) SendEmail(cfg domain.Config, htmlBody string) {
-	from := cfg.Email.From
-	pass := cfg.Email.Pass
-	to := cfg.Email.To
+func (s *service) SendEmail(htmlBody string) {
+	from := s.cfg.Email.From
+	pass := s.cfg.Email.Pass
+	to := s.cfg.Email.To
 
 	subject := "Available Activity - Burnaby"
 
@@ -72,4 +75,34 @@ func (s *service) BuildHtmlBody(activities []domain.Activity) string {
 	<p>🏐⚽️🏈🏋️🏊</p>`
 
 	return htmlBody
+}
+
+func (s *service) SendErrorEmail(err error) {
+	from := s.cfg.Email.From
+	pass := s.cfg.Email.Pass
+	to := s.cfg.Email.To
+
+	subject := "ERROR: Available Activity - Burnaby"
+
+	htmlBody := `<p>Hello!</p>
+	<p>The following error occurred while trying to fetch the activities:</p>
+	<p>` + err.Error() + `</p>
+	<p>Please, contact the administrator!</p>
+	<p>🏐⚽️🏈🏋️🏊</p>`
+
+	headers := "From: " + from + "\n" +
+		"To: " + to + "\n" +
+		"Subject: " + subject + "\n"
+
+	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+	msg := []byte(headers + mime + htmlBody)
+
+	err = smtp.SendMail("smtp.gmail.com:587",
+		smtp.PlainAuth("", from, pass, "smtp.gmail.com"),
+		from, []string{to}, []byte(msg))
+
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 }

@@ -6,13 +6,18 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/mateusolvr/web-scraper-go/domain"
 )
 
 type service struct {
+	emailService domain.EmailService
 }
 
-func NewService() *service {
-	return &service{}
+func NewService(emailService domain.EmailService) *service {
+	return &service{
+		emailService: emailService,
+	}
 }
 
 func (s *service) ValidateActivity(ctx context.Context, activity string, actNameConfig string) bool {
@@ -46,6 +51,7 @@ func (s *service) CleanFields(courseName, weekDay, times, date, complexName, ava
 func (s *service) ParseDate(dateStr string) time.Time {
 	date, err := time.Parse("Jan-02-2006", dateStr)
 	if err != nil {
+		s.emailService.SendErrorEmail(err)
 		log.Fatal(err)
 	}
 

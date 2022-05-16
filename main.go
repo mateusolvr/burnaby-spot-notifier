@@ -16,9 +16,8 @@ func main() {
 
 	configService := config.NewService()
 	cfg := configService.GetConfig()
-
-	validationService := validation.NewService()
-	emailService := email.NewService()
+	emailService := email.NewService(cfg)
+	validationService := validation.NewService(emailService)
 	crawlerService := readpage.NewService(validationService, emailService, cfg)
 
 	crawlerService.InitializeCrawler()
