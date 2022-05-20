@@ -1,10 +1,16 @@
 # Email Configurations
-   email:
-     from: "xxxxx@xxxx.com"
-     pass: "xxxxxxx"
-     to: "xxxxx@xxxx.com"
+  email:
+    from: "xxxxx@xxxx.com"
+    pass: "xxxxxxx"
+    to: "xxxxx@xxxx.com"
 
- # Activity Configurations
-   activity:
-     name: "Volleyball Bonsor"
-     daysAhead: 4
+# Activity Configurations
+  activity:
+    name: "Volleyball Bonsor"
+    daysAhead: 4
+
+# Redis Configuration
+  redis:
+    enabled: true
+    expireMinutes: 1440
+    url: redis://<USER>:<PASSWORD>@<SERVICE-IP>:<PORT>

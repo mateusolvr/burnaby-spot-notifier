@@ -1,7 +1,7 @@
 package domain
 
 type EmailService interface {
-	SendEmail(htmlBody string)
-	BuildHtmlBody(activities []Activity) string
+	SendEmailCache(activities []Activity)
+	SendErrorEmailCache(err error)
 	SendErrorEmail(err error)
 }

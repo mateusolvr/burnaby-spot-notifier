@@ -9,16 +9,19 @@ import (
 )
 
 type service struct {
-	cfg domain.Config
+	cacheService domain.CacheService
+	cfg          domain.Config
 }
 
-func NewService(cfg domain.Config) *service {
+func NewService(cacheService domain.CacheService, cfg domain.Config) *service {
 	return &service{
-		cfg: cfg,
+		cacheService: cacheService,
+		cfg:          cfg,
 	}
 }
 
-func (s *service) SendEmail(htmlBody string) {
+func (s *service) sendEmail(activities []domain.Activity) {
+
 	from := s.cfg.Email.From
 	pass := s.cfg.Email.Pass
 	to := s.cfg.Email.To
@@ -30,6 +33,9 @@ func (s *service) SendEmail(htmlBody string) {
 		"Subject: " + subject + "\n"
 
 	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+	htmlBody := s.buildHtmlBody(activities)
+
 	msg := []byte(headers + mime + htmlBody)
 
 	err := smtp.SendMail("smtp.gmail.com:587",
@@ -38,11 +44,10 @@ func (s *service) SendEmail(htmlBody string) {
 
 	if err != nil {
 		log.Fatal(err)
-		return
 	}
 }
 
-func (s *service) BuildHtmlBody(activities []domain.Activity) string {
+func (s *service) buildHtmlBody(activities []domain.Activity) string {
 	var tableLines string
 	for _, act := range activities {
 		tableLines += `<tr>
@@ -82,6 +87,8 @@ func (s *service) SendErrorEmail(err error) {
 	pass := s.cfg.Email.Pass
 	to := s.cfg.Email.To
 
+	log.Println("Email was sent for this error.")
+
 	subject := "ERROR: Available Activity - Burnaby"
 
 	htmlBody := `<p>Hello!</p>
@@ -105,4 +112,42 @@ func (s *service) SendErrorEmail(err error) {
 		log.Fatal(err)
 		return
 	}
+}
+
+func (s *service) SendEmailCache(activities []domain.Activity) {
+	filteredActivities, err := s.cacheService.GetActivitiesWithoutCache(activities)
+	if err != nil {
+		s.SendErrorEmail(err)
+		log.Fatal(err)
+	}
+
+	if len(filteredActivities) == 0 {
+		log.Printf("%d activities were found but no email was sent!", len(activities))
+		return
+	}
+
+	err = s.cacheService.AddActivitiesCache(filteredActivities)
+	if err != nil {
+		s.SendErrorEmail(err)
+		log.Fatal(err)
+	}
+
+	s.sendEmail(filteredActivities)
+	log.Printf("%d activities were found and %d activities were sent in the email!",
+		len(activities), len(filteredActivities))
+}
+
+func (s *service) SendErrorEmailCache(err error) {
+	errInCache, cacheErr := s.cacheService.CheckErrorCache(err)
+	if cacheErr != nil {
+		s.SendErrorEmail(cacheErr)
+		log.Fatal(cacheErr)
+	}
+	if errInCache {
+		log.Println("Email was not sent for this error due to cache.")
+		return
+	}
+
+	s.cacheService.SetKey(err.Error(), "true", s.cfg.Redis.ExpireMinutes)
+	s.SendErrorEmail(err)
 }

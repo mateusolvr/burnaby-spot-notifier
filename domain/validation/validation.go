@@ -51,7 +51,7 @@ func (s *service) CleanFields(courseName, weekDay, times, date, complexName, ava
 func (s *service) ParseDate(dateStr string) time.Time {
 	date, err := time.Parse("Jan-02-2006", dateStr)
 	if err != nil {
-		s.emailService.SendErrorEmail(err)
+		s.emailService.SendErrorEmailCache(err)
 		log.Fatal(err)
 	}
 

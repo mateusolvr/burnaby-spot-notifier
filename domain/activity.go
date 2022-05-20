@@ -10,4 +10,5 @@ type Activity struct {
 	Date            time.Time
 	ComplexName     string
 	AvailableSpaces int
+	ActKeyCache     string
 }

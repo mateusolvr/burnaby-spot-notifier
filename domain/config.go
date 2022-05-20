@@ -10,6 +10,11 @@ type Config struct {
 		Name      string `yaml:"name"`
 		DaysAhead int    `yaml:"daysAhead"`
 	} `yaml:"activity"`
+	Redis struct {
+		Enabled       bool   `yaml:"enabled"`
+		ExpireMinutes int    `yaml:"expireMinutes"`
+		Url           string `yaml:"url"`
+	} `yaml:"redis"`
 }
 
 type ConfigService interface {
