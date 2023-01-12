@@ -14,6 +14,7 @@ type service struct {
 func NewService() *service {
 	return &service{}
 }
+
 func (s *service) GetConfig() domain.Config {
 	f, err := os.Open("config.yml")
 	if err != nil {

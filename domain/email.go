@@ -1,6 +1,7 @@
 package domain
 
 type EmailService interface {
-	SendMail(cfg Config, htmlBody string)
-	BuildHtmlBody(activities []Activity) string
+	SendEmailCache(activities []Activity)
+	SendErrorEmailCache(err error)
+	SendErrorEmail(err error)
 }

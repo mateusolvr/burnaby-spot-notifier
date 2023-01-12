@@ -18,14 +18,16 @@ import (
 type service struct {
 	validationService domain.ValidationService
 	emailService      domain.EmailService
+	cacheService      domain.CacheService
 	cfg               domain.Config
 	activities        []domain.Activity
 }
 
-func NewService(validationService domain.ValidationService, emailService domain.EmailService, cfg domain.Config) *service {
+func NewService(validationService domain.ValidationService, emailService domain.EmailService, cacheService domain.CacheService, cfg domain.Config) *service {
 	return &service{
 		validationService: validationService,
 		emailService:      emailService,
+		cacheService:      cacheService,
 		cfg:               cfg,
 	}
 }
@@ -49,6 +51,7 @@ func (s *service) InitializeCrawler() {
 		chromedp.Click(`//*[@id="browser"]/li[1]/span/a`, chromedp.BySearch),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmailCache(err)
 		log.Fatal(err)
 	}
 
@@ -77,6 +80,7 @@ func (s *service) clickNextPage(ctx context.Context) {
 		chromedp.Click(`//*[@id="course-tab"]/div[2]/div/div[2]/div[2]/a[3]`, chromedp.BySearch),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmailCache(err)
 		log.Fatal(err)
 	}
 }
@@ -87,6 +91,7 @@ func (s *service) getTotalActivities(ctx context.Context) (activitiesQty int) {
 		chromedp.Text("/html/body/div[1]/div[2]/div/div[2]/div/div/div[1]/div[2]/div/div[2]/div[1]", &activitiesQtyStr),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmailCache(err)
 		log.Fatal(err)
 	}
 
@@ -96,6 +101,7 @@ func (s *service) getTotalActivities(ctx context.Context) (activitiesQty int) {
 	if len(str) >= 2 {
 		activitiesQty, err = strconv.Atoi(str[1])
 		if err != nil {
+			s.emailService.SendErrorEmailCache(err)
 			log.Fatal(err)
 		}
 		return activitiesQty
@@ -110,6 +116,7 @@ func (s *service) getActivitiesPage(ctx context.Context) {
 		chromedp.Nodes(`//*[@id="course-tab"]/div[2]/div/table/tbody/tr`, &rows, chromedp.BySearch),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmailCache(err)
 		log.Fatal(err)
 	}
 
@@ -119,6 +126,7 @@ func (s *service) getActivitiesPage(ctx context.Context) {
 		if err := chromedp.Run(ctx,
 			chromedp.Text(fmt.Sprintf(sel, i), &firstCol),
 		); err != nil {
+			s.emailService.SendErrorEmailCache(err)
 			log.Fatal(err)
 		}
 		if s.validationService.ValidateActivity(ctx, firstCol, s.cfg.Activity.Name) {
@@ -137,6 +145,7 @@ func (s *service) getActivityDetails(ctx context.Context, index int) {
 		chromedp.Click(sel, chromedp.BySearch),
 	)
 	if err != nil {
+		s.emailService.SendErrorEmailCache(err)
 		log.Fatal(err)
 	}
 
@@ -147,6 +156,7 @@ func (s *service) getActivityDetails(ctx context.Context, index int) {
 	)
 
 	if err != nil {
+		s.emailService.SendErrorEmailCache(err)
 		log.Fatal(err)
 	}
 
@@ -175,12 +185,14 @@ func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node
 			chromedp.Text(fmt.Sprintf(tableSel, rowIndex, domain.AvailableSpacesColumn), &availableSpaces),
 		)
 		if err != nil {
+			s.emailService.SendErrorEmailCache(err)
 			log.Fatal(err)
 		}
 
 		courseName, weekDay, times, date, complexName, availableSpaces = s.validationService.CleanFields(courseName, weekDay, times, date, complexName, availableSpaces)
 		availableSpacesInt, err := strconv.Atoi(availableSpaces)
 		if err != nil {
+			s.emailService.SendErrorEmailCache(err)
 			log.Fatal(err)
 		}
 
@@ -190,7 +202,9 @@ func (s *service) getDataFromActivityTable(ctx context.Context, rows []*cdp.Node
 			Times:           times,
 			DateStr:         date,
 			ComplexName:     complexName,
-			AvailableSpaces: availableSpacesInt}
+			AvailableSpaces: availableSpacesInt,
+			ActKeyCache:     courseName + "|" + date + "|" + times,
+		}
 		s.activities = append(s.activities, newActivity)
 	}
 }
@@ -202,15 +216,24 @@ func (s *service) checkActivityAvailability() {
 		currDate := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 		dateDiff := act.Date.Sub(currDate).Hours() / 24
 
-		if dateDiff <= float64(s.cfg.Activity.DaysAhead) && act.AvailableSpaces > 0 {
-			availableActivities = append(availableActivities, act)
+		if dateDiff <= float64(s.cfg.Activity.DaysAhead) {
+			if act.AvailableSpaces > 0 {
+				availableActivities = append(availableActivities, act)
+			}
+			if act.AvailableSpaces == 0 {
+				_, err := s.cacheService.DelKey(act.ActKeyCache)
+				if err != nil && s.cfg.Redis.Enabled {
+					s.emailService.SendErrorEmailCache(err)
+					log.Fatal(err)
+				}
+			}
 		}
 	}
 
 	if len(availableActivities) > 0 {
-		htmlBody := s.emailService.BuildHtmlBody(availableActivities)
-		s.emailService.SendMail(s.cfg, htmlBody)
+		s.emailService.SendEmailCache(availableActivities)
+	} else {
+		log.Printf("%d activities were found!", len(availableActivities))
 	}
 
-	log.Printf("%d activities were found!", len(availableActivities))
 }

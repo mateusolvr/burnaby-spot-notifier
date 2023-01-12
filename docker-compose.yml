@@ -8,4 +8,5 @@ services:
     volumes:
       - .:/app
     command: go run main.go
+    container_name: web_crawler_burnaby
   

@@ -9,37 +9,54 @@ import (
 )
 
 type service struct {
+	cacheService domain.CacheService
+	cfg          domain.Config
 }
 
-func NewService() *service {
-	return &service{}
+func NewService(cacheService domain.CacheService, cfg domain.Config) *service {
+	return &service{
+		cacheService: cacheService,
+		cfg:          cfg,
+	}
 }
 
-func (s *service) SendMail(cfg domain.Config, htmlBody string) {
-	from := cfg.Email.From
-	pass := cfg.Email.Pass
-	to := cfg.Email.To
+func (s *service) sendEmail(activities []domain.Activity) {
+
+	from := s.cfg.Email.From
+	pass := s.cfg.Email.Pass
+	to := s.cfg.Email.To
 
 	subject := "Available Activity - Burnaby"
 
+	toString := ""
+	for _, v := range to {
+		toString += v + ","
+	}
+
+	if toString[len(toString)-1] == ',' {
+		toString = toString[:len(toString)-1]
+	}
+
 	headers := "From: " + from + "\n" +
-		"To: " + to + "\n" +
+		"To: " + toString + "\n" +
 		"Subject: " + subject + "\n"
 
 	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+	htmlBody := s.buildHtmlBody(activities)
+
 	msg := []byte(headers + mime + htmlBody)
 
 	err := smtp.SendMail("smtp.gmail.com:587",
 		smtp.PlainAuth("", from, pass, "smtp.gmail.com"),
-		from, []string{to}, []byte(msg))
+		from, to, []byte(msg))
 
 	if err != nil {
 		log.Fatal(err)
-		return
 	}
 }
 
-func (s *service) BuildHtmlBody(activities []domain.Activity) string {
+func (s *service) buildHtmlBody(activities []domain.Activity) string {
 	var tableLines string
 	for _, act := range activities {
 		tableLines += `<tr>
@@ -72,4 +89,87 @@ func (s *service) BuildHtmlBody(activities []domain.Activity) string {
 	<p>🏐⚽️🏈🏋️🏊</p>`
 
 	return htmlBody
+}
+
+func (s *service) SendErrorEmail(err error) {
+	from := s.cfg.Email.From
+	pass := s.cfg.Email.Pass
+	to := s.cfg.Email.To
+
+	log.Println("Email was sent for this error.")
+
+	subject := "ERROR: Available Activity - Burnaby"
+
+	htmlBody := `<p>Hello!</p>
+	<p>The following error occurred while trying to fetch the activities:</p>
+	<p>` + err.Error() + `</p>
+	<p>Please, contact the administrator!</p>
+	<p>🏐⚽️🏈🏋️🏊</p>`
+
+	toString := ""
+	for _, v := range to {
+		toString += v + ","
+	}
+
+	if toString[len(toString)-1] == ',' {
+		toString = toString[:len(toString)-1]
+	}
+
+	headers := "From: " + from + "\n" +
+		"To: " + toString + "\n" +
+		"Subject: " + subject + "\n"
+
+	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+	msg := []byte(headers + mime + htmlBody)
+
+	err = smtp.SendMail("smtp.gmail.com:587",
+		smtp.PlainAuth("", from, pass, "smtp.gmail.com"),
+		from, to, []byte(msg))
+
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+}
+
+func (s *service) SendEmailCache(activities []domain.Activity) {
+	filteredActivities, err := s.cacheService.GetActivitiesWithoutCache(activities)
+	if err != nil {
+		s.SendErrorEmail(err)
+		log.Fatal(err)
+	}
+
+	if len(filteredActivities) == 0 {
+		log.Printf("%d activities were found but no email was sent!", len(activities))
+		return
+	}
+
+	err = s.cacheService.AddActivitiesCache(filteredActivities)
+	if err != nil {
+		s.SendErrorEmail(err)
+		log.Fatal(err)
+	}
+
+	s.sendEmail(filteredActivities)
+	log.Printf("%d activities were found and %d activities were sent in the email!",
+		len(activities), len(filteredActivities))
+}
+
+func (s *service) SendErrorEmailCache(err error) {
+	errInCache, cacheErr := s.cacheService.CheckErrorCache(err)
+	if cacheErr != nil {
+		s.SendErrorEmail(cacheErr)
+		log.Fatal(cacheErr)
+	}
+	if errInCache {
+		log.Println("Email was not sent for this error due to cache.")
+		return
+	}
+
+	cacheErr = s.cacheService.SetKey(err.Error(), "true", s.cfg.Redis.ExpireMinutes)
+	if cacheErr != nil {
+		s.SendErrorEmail(cacheErr)
+		log.Fatal(cacheErr)
+	}
+	s.SendErrorEmail(err)
 }
