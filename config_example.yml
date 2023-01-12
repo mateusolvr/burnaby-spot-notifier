@@ -2,7 +2,7 @@
   email:
     from: "xxxxx@xxxx.com"
     pass: "xxxxxxx"
-    to: "xxxxx@xxxx.com"
+    to: ["xxxxx@xxxx.com","yyyyy@xxxx.com"]
 
 # Activity Configurations
   activity:

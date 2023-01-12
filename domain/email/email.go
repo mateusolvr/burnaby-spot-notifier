@@ -28,8 +28,17 @@ func (s *service) sendEmail(activities []domain.Activity) {
 
 	subject := "Available Activity - Burnaby"
 
+	toString := ""
+	for _, v := range to {
+		toString += v + ","
+	}
+
+	if toString[len(toString)-1] == ',' {
+		toString = toString[:len(toString)-1]
+	}
+
 	headers := "From: " + from + "\n" +
-		"To: " + to + "\n" +
+		"To: " + toString + "\n" +
 		"Subject: " + subject + "\n"
 
 	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
@@ -40,7 +49,7 @@ func (s *service) sendEmail(activities []domain.Activity) {
 
 	err := smtp.SendMail("smtp.gmail.com:587",
 		smtp.PlainAuth("", from, pass, "smtp.gmail.com"),
-		from, []string{to}, []byte(msg))
+		from, to, []byte(msg))
 
 	if err != nil {
 		log.Fatal(err)
@@ -97,8 +106,17 @@ func (s *service) SendErrorEmail(err error) {
 	<p>Please, contact the administrator!</p>
 	<p>🏐⚽️🏈🏋️🏊</p>`
 
+	toString := ""
+	for _, v := range to {
+		toString += v + ","
+	}
+
+	if toString[len(toString)-1] == ',' {
+		toString = toString[:len(toString)-1]
+	}
+
 	headers := "From: " + from + "\n" +
-		"To: " + to + "\n" +
+		"To: " + toString + "\n" +
 		"Subject: " + subject + "\n"
 
 	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
@@ -106,7 +124,7 @@ func (s *service) SendErrorEmail(err error) {
 
 	err = smtp.SendMail("smtp.gmail.com:587",
 		smtp.PlainAuth("", from, pass, "smtp.gmail.com"),
-		from, []string{to}, []byte(msg))
+		from, to, []byte(msg))
 
 	if err != nil {
 		log.Fatal(err)
@@ -148,6 +166,10 @@ func (s *service) SendErrorEmailCache(err error) {
 		return
 	}
 
-	s.cacheService.SetKey(err.Error(), "true", s.cfg.Redis.ExpireMinutes)
+	cacheErr = s.cacheService.SetKey(err.Error(), "true", s.cfg.Redis.ExpireMinutes)
+	if cacheErr != nil {
+		s.SendErrorEmail(cacheErr)
+		log.Fatal(cacheErr)
+	}
 	s.SendErrorEmail(err)
 }

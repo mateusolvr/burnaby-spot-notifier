@@ -57,7 +57,7 @@ func (s *service) DelKey(key string) (int64, error) {
 
 func (s *service) SetKey(key, value string, expiration int) error {
 	if s.cfg.Redis.Enabled {
-		s.cacheStorage.SetKey(key, value, expiration)
+		return s.cacheStorage.SetKey(key, value, expiration)
 	}
 	return nil
 }
