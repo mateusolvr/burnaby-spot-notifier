@@ -2,7 +2,7 @@
 up: ##@development Build and start development environment in background.
 	docker-compose up --build -d
 
-VERSION = 1.1.0
+VERSION = 2.0.0
 tag: 
 	docker tag spot-notifier-go:latest mateusolvr/personal:burnaby-spot-notifier-v$(VERSION)
 
