@@ -4,7 +4,7 @@ up: ##@development Build and start development environment in background.
 
 VERSION = 2.0.0
 tag: 
-	docker tag spot-notifier-go:latest mateusolvr/personal:burnaby-spot-notifier-v$(VERSION)
+	docker tag burnaby-spot-notifier-go:latest mateusolvr/personal:burnaby-spot-notifier-v$(VERSION)
 
 push:
 	docker push mateusolvr/personal:burnaby-spot-notifier-v$(VERSION)
