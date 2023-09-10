@@ -1,4 +1,4 @@
-module github.com/mateusolvr/web-scraper-go
+module github.com/mateusolvr/burnaby-spot-notifier
 
 go 1.17
 

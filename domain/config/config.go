@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/mateusolvr/web-scraper-go/domain"
+	"github.com/mateusolvr/burnaby-spot-notifier/domain"
 	"gopkg.in/yaml.v2"
 )
 

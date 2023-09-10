@@ -3,12 +3,12 @@ package domain
 import "time"
 
 type Activity struct {
-	CourseName      string
-	WeekDay         string
-	Times           string
-	DateStr         string
-	Date            time.Time
-	ComplexName     string
-	AvailableSpaces int
-	ActKeyCache     string
+	Name             string
+	StartDate        time.Time
+	EndDate          time.Time
+	RegistrationTime time.Time
+	WeekDay          string
+	Url              string
+	AvailableSpots   string
+	ActKeyCache      string
 }

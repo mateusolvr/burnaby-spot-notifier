@@ -4,17 +4,17 @@ import (
 	"log"
 	"time"
 
-	"github.com/mateusolvr/web-scraper-go/domain/cache"
-	"github.com/mateusolvr/web-scraper-go/domain/config"
-	"github.com/mateusolvr/web-scraper-go/domain/email"
-	readpage "github.com/mateusolvr/web-scraper-go/domain/read_page"
-	"github.com/mateusolvr/web-scraper-go/domain/validation"
-	"github.com/mateusolvr/web-scraper-go/internal/infrastructure/redis"
+	"github.com/mateusolvr/burnaby-spot-notifier/domain/cache"
+	"github.com/mateusolvr/burnaby-spot-notifier/domain/config"
+	"github.com/mateusolvr/burnaby-spot-notifier/domain/email"
+	readapi "github.com/mateusolvr/burnaby-spot-notifier/domain/read_api"
+	"github.com/mateusolvr/burnaby-spot-notifier/domain/validation"
+	"github.com/mateusolvr/burnaby-spot-notifier/internal/infrastructure/redis"
 )
 
 func main() {
 	start := time.Now()
-	log.Printf("Starting crawler at %s", time.Now())
+	log.Printf("Starting notifier at %s", time.Now())
 
 	// Config
 	configService := config.NewService()
@@ -32,9 +32,9 @@ func main() {
 		log.Fatal(dbErr)
 	}
 	validationService := validation.NewService(emailService)
-	crawlerService := readpage.NewService(validationService, emailService, cacheService, cfg)
+	apiService := readapi.NewService(validationService, emailService, cacheService, cfg)
 
-	crawlerService.InitializeCrawler()
+	apiService.Initialize()
 
 	log.Printf("Took: %f secs\n", time.Since(start).Seconds())
 }

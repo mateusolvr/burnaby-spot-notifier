@@ -2,12 +2,12 @@
 up: ##@development Build and start development environment in background.
 	docker-compose up --build -d
 
-VERSION = 1.1.0
+VERSION = 2.0.0
 tag: 
-	docker tag web-scraper-go-go:latest mateusolvr/personal:web-scraper-burnaby-v$(VERSION)
+	docker tag burnaby-spot-notifier-go:latest mateusolvr/personal:burnaby-spot-notifier-v$(VERSION)
 
 push:
-	docker push mateusolvr/personal:web-scraper-burnaby-v$(VERSION)
+	docker push mateusolvr/personal:burnaby-spot-notifier-v$(VERSION)
 
 .PHONY: shell
 shell: ##@development Start a shell session within the container.
