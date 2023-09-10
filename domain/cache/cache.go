@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/mateusolvr/web-scraper-go/domain"
+	"github.com/mateusolvr/burnaby-spot-notifier/domain"
 )
 
 type service struct {
